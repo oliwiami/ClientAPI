@@ -7,4 +7,4 @@
 
 ## Features:
 The GetClient method finds a client in the database, based on their pesel number, and gets information about them, including their age, birthday and gender
-and returns a proper output, like birthday wishes.
+and returns a proper output.
