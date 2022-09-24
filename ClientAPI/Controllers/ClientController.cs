@@ -77,10 +77,10 @@ namespace ClientAPI.Controllers
         }
 
         //Get info from pesel
-        [HttpGet]
-        [Route("{pesel}")]
-        public async Task<IActionResult> GetClient([FromRoute] string pesel)
+        [HttpGet]     
+        public async Task<IActionResult> GetClient(string pesel)
         {
+
             var client = dbContext.Clients.FirstOrDefault(c => c.Pesel == pesel);
             if (client == null)
             {
