@@ -58,11 +58,11 @@ namespace ClientAPI.Controllers
 
             if (isPeselValid)
             {
-                await dbContext.Clients.AddAsync(client);
+            await dbContext.Clients.AddAsync(client);
 
-                await dbContext.SaveChangesAsync();
-                return Ok(client);
-            }
+            await dbContext.SaveChangesAsync();
+            return Ok(client);
+        }
             else
             {
                 return BadRequest("Invalid pesel input");
