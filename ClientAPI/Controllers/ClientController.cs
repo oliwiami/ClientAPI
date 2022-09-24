@@ -20,52 +20,58 @@ namespace ClientAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> AddClient(AddRequest addRequest)
         {
-            var client = new ClientModel()
+            try
             {
-                Id = Guid.NewGuid(),
-                Pesel = addRequest.Pesel,
-                Name = addRequest.Name,
-                LastName = addRequest.LastName
-            };
-
-            bool validatePesel(String pesel)
-            {
-                int[] weights = { 1, 3, 7, 9, 1, 3, 7, 9, 1, 3 };
-
-                bool result = false;
-
-                if (pesel.Length == 11)
+                var client = new ClientModel()
                 {
-                    int controlSum = 0;
-                    for (int i = 0; i < pesel.Length - 1; i++)
-                    {
-                        controlSum += weights[i] * int.Parse(pesel[i].ToString());
-                    }
-                    int controlNum = controlSum % 10;
-                    controlNum = 10 - controlNum;
-                    if (controlNum == 10)
-                    {
-                        controlNum = 0;
-                    }
-                    int lastNum = int.Parse(pesel[pesel.Length-1].ToString());
+                    Id = Guid.NewGuid(),
+                    Pesel = addRequest.Pesel,
+                    Name = addRequest.Name,
+                    LastName = addRequest.LastName
+                };
 
-                    result = controlNum == lastNum;
+                bool validatePesel(String pesel)
+                {
+                    int[] weights = { 1, 3, 7, 9, 1, 3, 7, 9, 1, 3 };
+
+                    bool result = false;
+
+                    if (pesel.Length == 11)
+                    {
+                        int controlSum = 0;
+                        for (int i = 0; i < pesel.Length - 1; i++)
+                        {
+                            controlSum += weights[i] * int.Parse(pesel[i].ToString());
+                        }
+                        int controlNum = controlSum % 10;
+                        controlNum = 10 - controlNum;
+                        if (controlNum == 10)
+                        {
+                            controlNum = 0;
+                        }
+                        int lastNum = int.Parse(pesel[pesel.Length - 1].ToString());
+
+                        result = controlNum == lastNum;
+                    }
+                    return result;
                 }
-                return result;
-            }
 
-            bool isPeselValid = validatePesel(client.Pesel);
+                bool isPeselValid = validatePesel(client.Pesel);
 
-            if (isPeselValid)
+                if (isPeselValid)
+                {
+                    await dbContext.Clients.AddAsync(client);
+
+                    await dbContext.SaveChangesAsync();
+                    return Ok(client);
+                }
+                else
+                {
+                    return BadRequest("Invalid pesel input");
+                }
+            }catch (Exception ex)
             {
-            await dbContext.Clients.AddAsync(client);
-
-            await dbContext.SaveChangesAsync();
-            return Ok(client);
-        }
-            else
-            {
-                return BadRequest("Invalid pesel input");
+                return BadRequest("Could not create client");
             }
 
         }
@@ -78,11 +84,11 @@ namespace ClientAPI.Controllers
             var client = dbContext.Clients.FirstOrDefault(c => c.Pesel == pesel);
             if (client == null)
             {
-                return NotFound();
+                return NotFound("Client with pesel: " + pesel +" does not exist");
             }
 
             int age;
-            int decadeIndycator =(int)Char.GetNumericValue(pesel[2]);
+            int milleniumIndicator =(int)Char.GetNumericValue(pesel[2]);
             String birthString;
             DateTime dateOfBirth=DateTime.Now;
             DateTime today = DateTime.Now;
@@ -92,15 +98,21 @@ namespace ClientAPI.Controllers
             List<String>result=new List<String>();
 
             //Get age
-            if (decadeIndycator >= 2)
+            if (milleniumIndicator >= 2)
             {
-                string month = (decadeIndycator - 2).ToString();
+                string month = (milleniumIndicator - 2).ToString();
                 birthString = "20" + pesel[0] + pesel[1] + "-" + month + pesel[3] + "-" + pesel[4] + pesel[5];
 
                 dateOfBirth = Convert.ToDateTime(birthString);
 
-                TimeSpan ts = today.Subtract(dateOfBirth);
-                age = ts.Days/365;
+                age = today.Year - dateOfBirth.Year;
+                if(today.Month < dateOfBirth.Month)
+                {
+                    age--;
+                }else if(today.Month == dateOfBirth.Month && today.Day < dateOfBirth.Day)
+                {
+                    age--;
+                }
                
             }
             else
@@ -109,8 +121,15 @@ namespace ClientAPI.Controllers
                 birthString = "19" + pesel[0] + pesel[1] + "-" + pesel[2] + pesel[3] + "-" + pesel[4] + pesel[5];
                 dateOfBirth = Convert.ToDateTime(birthString);
 
-                TimeSpan ts = today.Subtract(dateOfBirth);
-                age = ts.Days / 365;
+                age = today.Year - dateOfBirth.Year;
+                if (today.Month < dateOfBirth.Month)
+                {
+                    age--;
+                }
+                else if (today.Month == dateOfBirth.Month && today.Day < dateOfBirth.Day)
+                {
+                    age--;
+                }
             }
 
             result.Add(age.ToString());
@@ -154,8 +173,6 @@ namespace ClientAPI.Controllers
                         break;
                 }
                 result.Add(wishes.ToString());
-
-
             }
 
             return Ok(result);
